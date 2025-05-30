@@ -1,0 +1,108 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f4f4;
+}
+
+.home {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-image: url('../public/nature.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+}
+
+h2 {
+    margin-bottom: 20px;
+    color: black;
+}
+
+/* Create form styles */
+.create_form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.create_form input,
+.create_form select {
+    margin: 5px 0;
+    width: 300px;
+    padding: 10px;
+    border: none;
+    border-bottom: 2px solid #555;
+    background-color: #fff;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.create_form input:focus,
+.create_form select:focus {
+    border-color: #000;
+}
+
+.create_form button {
+    padding: 10px 15px;
+    background-color: #000;
+    color: #fff;
+    border: none;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.create_form button:hover {
+    background-color: #333;
+}
+
+/* Task list styles */
+.task {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 360px;
+    background-color: #000;
+    color: white;
+    border-radius: 5px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.checkbox .icon {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.line_through {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.task div span,
+.task div button {
+    margin-left: 10px;
+    font-size: 13px;
+}
+
+.task .icon {
+    cursor: pointer;
+    font-size: 16px;
+    transition: color 0.2s ease;
+}
+
+.task .icon:hover {
+    color: #ff4d4d;
+}
