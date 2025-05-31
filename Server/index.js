@@ -1,7 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const TodoModel = require('./Model/Todo');
+const createTodoModel = require('./Model/Todo'); // ✅ Use factory function
+const EmployeeModel = require('./Model/Employee');
 
 const app = express();
 
@@ -9,7 +10,36 @@ app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/test');
+mongoose.connect('mongodb://127.0.0.1:27017/employee');
+const todoDB = mongoose.createConnection('mongodb://127.0.0.1:27017/test');
+
+// Create TodoModel from second connection
+const TodoModel = createTodoModel(todoDB); // ✅ Correct usage
+
+// Register
+app.post('/register', (req, res) => {
+  EmployeeModel.create(req.body)
+    .then(employee => res.json(employee))
+    .catch(err => res.status(500).json({ error: err.message }));
+});
+
+// Login
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  EmployeeModel.findOne({ email })
+    .then(user => {
+      if (user) {
+        if (user.password === password) {
+          res.json("Success");
+        } else {
+          res.json("The password is incorrect");
+        }
+      } else {
+        res.json("No record existed");
+      }
+    })
+    .catch(err => res.status(500).json({ error: err.message }));
+});
 
 // Get all todos
 app.get('/get', (req, res) => {
@@ -45,7 +75,7 @@ app.post('/add', (req, res) => {
   TodoModel.create({
     task,
     priority,
-    dueDate: dueDate || null  
+    dueDate: dueDate || null
   })
     .then(result => res.json(result))
     .catch(err => res.json(err));

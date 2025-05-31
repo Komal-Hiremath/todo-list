@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import Create from './Create';
 import axios from 'axios';
 import { BsFillTrashFill, BsFillCheckCircleFill, BsCircleFill, BsPencilSquare } from 'react-icons/bs';
+import { FiLogOut } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import './App.css';
 
 function Home() {
   const [todos, setTodos] = useState([]);
@@ -11,6 +14,14 @@ function Home() {
   const [editDueDate, setEditDueDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('');
+  const [filterOption, setFilterOption] = useState('');
+
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
 
   useEffect(() => {
     fetchTodos();
@@ -25,6 +36,7 @@ function Home() {
   const addTodo = (newTodo) => {
     setTodos(prevTodos => [...prevTodos, newTodo]);
   };
+
   const toggleDone = (id, done) => {
     axios.put(`http://localhost:3001/update/${id}`, { done: !done })
       .then(() => fetchTodos())
@@ -41,7 +53,7 @@ function Home() {
     setEditId(todo._id);
     setEditTask(todo.task);
     setEditPriority(todo.priority || 'Medium');
-    setEditDueDate(todo.dueDate ? todo.dueDate.slice(0, 10) : ''); // format yyyy-mm-dd
+    setEditDueDate(todo.dueDate ? todo.dueDate.slice(0, 10) : '');
   };
 
   const saveEdit = (id) => {
@@ -72,12 +84,51 @@ function Home() {
     setEditDueDate('');
   };
 
-  // Filter by search term
-  const filteredTodos = todos.filter(todo =>
-    todo.task.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const isToday = (date) => {
+    const today = new Date();
+    const d = new Date(date);
+    return d.toDateString() === today.toDateString();
+  };
 
-  // Sort by selected option
+  const isThisWeek = (date) => {
+    const today = new Date();
+    const currentDay = today.getDay();
+    const firstDay = new Date(today);
+    firstDay.setDate(today.getDate() - currentDay);
+    const lastDay = new Date(firstDay);
+    lastDay.setDate(firstDay.getDate() + 6);
+    const d = new Date(date);
+    return d >= firstDay && d <= lastDay;
+  };
+
+  const isOverdue = (date) => {
+    const now = new Date();
+    const d = new Date(date);
+    return d < now && !isToday(date);
+  };
+
+  const daysLeft = (dueDate) => {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  const filteredTodos = todos.filter(todo => {
+    const matchesSearch = todo.task.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const dueDateFilter = () => {
+      if (!filterOption) return true;
+      if (!todo.dueDate) return false;
+      if (filterOption === 'today') return isToday(todo.dueDate);
+      if (filterOption === 'thisWeek') return isThisWeek(todo.dueDate);
+      if (filterOption === 'overdue') return isOverdue(todo.dueDate);
+      return true;
+    };
+
+    return matchesSearch && dueDateFilter();
+  });
+
   const sortedTodos = [...filteredTodos].sort((a, b) => {
     if (sortOption === 'dueDate') {
       if (!a.dueDate) return 1;
@@ -87,15 +138,18 @@ function Home() {
       const priorityOrder = { High: 1, Medium: 2, Low: 3 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
     }
-    return 0; // default no sorting
+    return 0;
   });
 
   return (
-    <div className='home'>
+    <div className='home' style={{ position: 'relative' }}>
+      <div style={{ position: 'absolute', top: 20, right: 20, cursor: 'pointer', color: 'white' }} onClick={handleLogout} title="Logout">
+        <FiLogOut size={28} />
+      </div>
+
       <h2>Todo List</h2>
       <Create addTodo={addTodo} />
 
-      {/* Search and Sort */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <input
           type="text"
@@ -104,30 +158,35 @@ function Home() {
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{ padding: 8, width: 320 }}
         />
-        <select
-          value={sortOption}
-          onChange={(e) => setSortOption(e.target.value)}
-          style={{ padding: 8 }}
-        >
+        <select value={sortOption} onChange={(e) => setSortOption(e.target.value)} style={{ padding: 8 }}>
           <option value="">Sort By</option>
           <option value="dueDate">Due Date</option>
           <option value="priority">Priority</option>
         </select>
+        <select value={filterOption} onChange={(e) => setFilterOption(e.target.value)} style={{ padding: 8 }}>
+          <option value="">Filter By</option>
+          <option value="today">Today</option>
+          <option value="thisWeek">This Week</option>
+          <option value="overdue">Overdue</option>
+        </select>
       </div>
 
-      {/* Task list */}
-      {
-        sortedTodos.length === 0 ? (
-          <div><h2>No Record</h2></div>
-        ) : (
-          sortedTodos.map(todo => (
-            <div className='task' key={todo._id}>
+      {sortedTodos.length === 0 ? (
+        <div><h2>No Record</h2></div>
+      ) : (
+        sortedTodos.map(todo => {
+          const overdue = !todo.done && todo.dueDate && isOverdue(todo.dueDate);
+          const days = todo.dueDate ? daysLeft(todo.dueDate) : null;
 
+          return (
+            <div
+              className={`task ${overdue ? 'overdue' : ''} ${todo.priority}`}
+              key={todo._id}
+            >
               <div className='checkbox' onClick={() => toggleDone(todo._id, todo.done)}>
                 {todo.done
                   ? <BsFillCheckCircleFill className='icon' />
-                  : <BsCircleFill className='icon' />
-                }
+                  : <BsCircleFill className='icon' />}
               </div>
 
               <div style={{ flexGrow: 1, marginLeft: 10 }}>
@@ -169,9 +228,16 @@ function Home() {
                     <span style={{ marginLeft: 15, fontSize: 12, opacity: 0.7 }}>
                       [{todo.priority}]
                     </span>
+                    <br />
                     {todo.dueDate && (
                       <span style={{ marginLeft: 10, fontSize: 12, opacity: 0.7 }}>
-                        Due: {new Date(todo.dueDate).toLocaleDateString()}
+                        Date: {new Date(todo.dueDate).toLocaleDateString()} (
+                        {days < 0
+                          ? `${Math.abs(days)} days overdue`
+                          : days === 0
+                          ? 'Today'
+                          : `${days} days left`}
+                        )
                       </span>
                     )}
                   </>
@@ -181,11 +247,10 @@ function Home() {
               <div>
                 <BsFillTrashFill className='icon' onClick={() => handleDelete(todo._id)} />
               </div>
-
             </div>
-          ))
-        )
-      }
+          );
+        })
+      )}
     </div>
   );
 }
